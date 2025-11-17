@@ -54,6 +54,7 @@ class AnimationTerm(ManagerTermBase):
         self.motion_durations = torch.zeros(self.num_envs, device=env.device, dtype=torch.float32)
 
         self.reset(torch.arange(self.num_envs))
+        self._fetch_motion_data()
 
     def reset(self, env_ids: Sequence[int] | None = None):
         if env_ids is None:
@@ -75,8 +76,6 @@ class AnimationTerm(ManagerTermBase):
             self.motion_fetch_time[env_ids, 0] = 0.0
         if self.num_steps > 1:
             self.motion_fetch_time[env_ids, 1:] = self.motion_fetch_time[env_ids, 0:1] + self.step_indices[1:].float() * self._env.step_dt
-        
-        self._fetch_motion_data()
 
     def update(self, dt: float):
         if self.cfg.random_fetch:

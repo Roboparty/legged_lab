@@ -227,9 +227,16 @@ class TerminationsCfg:
         func=mdp.illegal_contact,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=MISSING), "threshold": 1.0},
     )
-    motion_data_finish = DoneTerm(
-        func=mdp.motion_data_finish
+    base_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.2})
+    bad_orientation = DoneTerm(
+        func=mdp.bad_orientation, 
+        params={
+            "limit_angle": math.radians(45.0),
+        },
     )
+    # motion_data_finish = DoneTerm(
+    #     func=mdp.motion_data_finish
+    # )
     
 
 @configclass
@@ -255,7 +262,7 @@ class AnimationCfg:
             "key_body_pos_b",
         ], 
         num_steps_to_use=4, 
-        random_initialize=True,
+        random_initialize=False,
         random_fetch=False,
         enable_visualization=False,
     )

@@ -42,16 +42,17 @@ class G1DeepMimicEnvCfg(DeepMimicEnvCfg):
     def __post_init__(self):
         super().__post_init__()
         
-        self.episode_length_s = 3.0
+        self.episode_length_s = 10.0
 
         self.scene.robot = UNITREE_G1_29DOF_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
         self.motion_data.motion_dataset.motion_data_dir = os.path.join(
-            LEGGED_LAB_ROOT_DIR, "data", "MotionData", "g1_29dof", "Male2MartialArtsKicks_c3d"
+            LEGGED_LAB_ROOT_DIR, "data", "MotionData", "g1_29dof", "walk"
         )
         self.motion_data.motion_dataset.motion_data_weights = {
-            "G8_-__roundhouse_left_stageii": 1.0,
+            # "G8_-__roundhouse_left_stageii": 1.0,
             # "G9_-__roundhouse_right_stageii": 1.0,
+            "B9_-__Walk_turn_left_90_stageii": 1.0,
         }
 
         # -----------------------------------------------------
@@ -84,6 +85,7 @@ class G1DeepMimicEnvCfg(DeepMimicEnvCfg):
         self.events.reset_from_ref.params = {
             "animation": ANIMATION_TERM_NAME,
         }
+        # self.events.reset_from_ref = None
         
         # -----------------------------------------------------
         # Rewards
@@ -93,7 +95,7 @@ class G1DeepMimicEnvCfg(DeepMimicEnvCfg):
             "std": 0.5,
             "animation": ANIMATION_TERM_NAME,
         }
-        self.rewards.ref_track_quat_error_exp.weight = 0.8
+        self.rewards.ref_track_quat_error_exp.weight = 0.08
         self.rewards.ref_track_quat_error_exp.params = {
             "std": 0.5,
             "animation": ANIMATION_TERM_NAME,
@@ -135,3 +137,10 @@ class G1DeepMimicEnvCfg(DeepMimicEnvCfg):
             "waist_yaw_link", "pelvis", ".*_shoulder_.*_link", ".*_elbow_link",
         ]
     
+@configclass
+class G1DeepMimicEnvCfg_PLAY(G1DeepMimicEnvCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        
+        self.scene.num_envs = 50
+        self.scene.env_spacing = 2.5

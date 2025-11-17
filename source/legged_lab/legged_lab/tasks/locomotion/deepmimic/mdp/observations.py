@@ -84,7 +84,7 @@ def ref_root_pos_error(
     animation_term: AnimationTerm = env.animation_manager.get_term(animation)
     
     ref_root_pos_w = animation_term.get_root_pos_w()  # shape: (num_envs, num_steps, 3)
-    root_pos_w = robot.data.root_pos_w  # shape: (num_envs, 3)
+    root_pos_w = robot.data.root_pos_w - env.scene.env_origins  # shape: (num_envs, 3)
     
     num_envs = root_pos_w.shape[0]
     
@@ -129,9 +129,8 @@ def ref_joint_pos(
     animation_term: AnimationTerm = env.animation_manager.get_term(animation)
     
     ref_dof_pos = animation_term.get_dof_pos()  # shape: (num_envs, num_steps, num_dofs)
-    num_envs = robot.data.root_pos_w.shape[0]
     
-    return ref_dof_pos.reshape(num_envs, -1)
+    return ref_dof_pos.reshape(env.num_envs, -1)
 
 def ref_key_body_pos_b(
     env: ManagerBasedAnimationEnv, 
@@ -143,9 +142,9 @@ def ref_key_body_pos_b(
     animation_term: AnimationTerm = env.animation_manager.get_term(animation)
     
     ref_key_body_pos_b = animation_term.get_key_body_pos_b()  # shape: (num_envs, num_steps, num_key_bodies, 3)
-    num_envs = robot.data.root_pos_w.shape[0]
     
-    return ref_key_body_pos_b.reshape(num_envs, -1)
+    return ref_key_body_pos_b.reshape(env.num_envs, -1)
+
 
 
 

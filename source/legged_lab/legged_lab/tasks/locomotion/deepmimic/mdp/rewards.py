@@ -42,7 +42,7 @@ def ref_track_root_pos_w_error_exp(
     robot: Articulation = env.scene[asset_cfg.name]
     animation_term: AnimationTerm = env.animation_manager.get_term(animation)
     
-    root_pos = robot.data.root_pos_w  # (N, 3)
+    root_pos = robot.data.root_pos_w - env.scene.env_origins  # (N, 3)
     ref_root_pos = animation_term.get_root_pos_w()[:, 0, :]  # (N, 3)
     
     pos_err = torch.sum(torch.square(root_pos - ref_root_pos), dim=-1)  # (N,)
