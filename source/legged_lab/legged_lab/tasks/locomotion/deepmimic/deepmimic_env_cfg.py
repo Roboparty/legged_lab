@@ -219,6 +219,10 @@ class RewardsCfg:
         params=MISSING
     )
     
+    dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-6)
+    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-8)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.001)
+    
 
 @configclass
 class TerminationsCfg:
@@ -244,8 +248,12 @@ class TerminationsCfg:
         func=mdp.deviation_root_pos_w,
         params=MISSING
     )
-    deviation_key_body_pos_b = DoneTerm(
-        func=mdp.deviation_key_body_pos_b,
+    # deviation_key_body_pos_b = DoneTerm(
+    #     func=mdp.deviation_key_body_pos_b,
+    #     params=MISSING
+    # )
+    deviation_key_body_pos_w = DoneTerm(
+        func=mdp.deviation_key_body_pos_w,
         params=MISSING
     )
     

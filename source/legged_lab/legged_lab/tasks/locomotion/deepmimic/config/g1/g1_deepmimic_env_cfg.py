@@ -122,7 +122,7 @@ class G1DeepMimicEnvCfg(DeepMimicEnvCfg):
                 preserve_order=True
             )
         }
-        self.rewards.ref_track_dof_pos_error_exp.weight = 0.15
+        self.rewards.ref_track_dof_pos_error_exp.weight = 0.5
         self.rewards.ref_track_dof_pos_error_exp.params = {
             "std": 2.0,
             "animation": ANIMATION_TERM_NAME,
@@ -144,7 +144,7 @@ class G1DeepMimicEnvCfg(DeepMimicEnvCfg):
             "animation": ANIMATION_TERM_NAME,
             "asset_cfg": SceneEntityCfg("robot"),
         }
-        self.terminations.deviation_key_body_pos_b.params = {
+        self.terminations.deviation_key_body_pos_w.params = {
             "threshold": 1.0,
             "animation": ANIMATION_TERM_NAME,
             "asset_cfg": SceneEntityCfg(
