@@ -139,6 +139,20 @@ class G1DeepMimicEnvCfg(DeepMimicEnvCfg):
         self.terminations.base_contact.params["sensor_cfg"].body_names = [
             "waist_yaw_link", "pelvis", ".*_shoulder_.*_link", ".*_elbow_link",
         ]
+        self.terminations.deviation_root_pos_w.params = {
+            "threshold": 1.0,
+            "animation": ANIMATION_TERM_NAME,
+            "asset_cfg": SceneEntityCfg("robot"),
+        }
+        self.terminations.deviation_key_body_pos_b.params = {
+            "threshold": 1.0,
+            "animation": ANIMATION_TERM_NAME,
+            "asset_cfg": SceneEntityCfg(
+                name="robot", 
+                body_names=KEY_BODY_NAMES, 
+                preserve_order=True
+            ),
+        }
     
 # For debug only
 @configclass

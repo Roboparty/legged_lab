@@ -233,12 +233,21 @@ class TerminationsCfg:
     bad_orientation = DoneTerm(
         func=mdp.bad_orientation, 
         params={
-            "limit_angle": math.radians(80.0),
+            "limit_angle": math.radians(50.0),
         },
     )
     # motion_data_finish = DoneTerm(
     #     func=mdp.motion_data_finish
     # )
+    
+    deviation_root_pos_w = DoneTerm(
+        func=mdp.deviation_root_pos_w,
+        params=MISSING
+    )
+    deviation_key_body_pos_b = DoneTerm(
+        func=mdp.deviation_key_body_pos_b,
+        params=MISSING
+    )
     
 
 @configclass
