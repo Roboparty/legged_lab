@@ -35,7 +35,7 @@ def root_rot_tan_norm(
 
 def key_body_pos_b(
     env: ManagerBasedEnv,
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot", body_names=MISSING),
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot", body_names=MISSING, preserve_order=True),
 ) -> torch.Tensor:
 
     robot: Articulation = env.scene[asset_cfg.name]
