@@ -94,6 +94,8 @@ class AnimationTerm(ManagerTermBase):
         if self.num_steps > 1:
             self.motion_fetch_time[env_ids, 1:] = self.motion_fetch_time[env_ids, 0:1] + self.step_indices[1:].float() * self._env.step_dt
 
+        self._fetch_motion_data(env_ids)
+
     def update(self, dt: float):
         if self.cfg.random_fetch:
             if self.cfg.num_steps_to_use > 0:
@@ -113,11 +115,14 @@ class AnimationTerm(ManagerTermBase):
         if self.cfg.enable_visualization:
             self._visualize()
             
-    def _fetch_motion_data(self):
+    def _fetch_motion_data(self, env_ids: Sequence[int] | None = None):
+        if env_ids is None:
+            env_ids = torch.arange(self.num_envs, device=self._env.device)
+        
         # Flatten for batch processing
-        num_queries = self.num_envs * self.num_steps
-        motion_times_flat = self.motion_fetch_time.reshape(-1)
-        motion_ids_flat = self.motion_ids.repeat_interleave(self.num_steps)
+        num_queries = len(env_ids) * self.num_steps
+        motion_times_flat = self.motion_fetch_time[env_ids].reshape(-1)
+        motion_ids_flat = self.motion_ids[env_ids].repeat_interleave(self.num_steps)
         
         # Sanity check
         assert motion_times_flat.shape[0] == num_queries
@@ -135,8 +140,8 @@ class AnimationTerm(ManagerTermBase):
                 buffer_name = f"{component}_buffer"
                 data = motion_data_dict[component]
                 # Reshape: (num_envs * num_steps, *) -> (num_envs, num_steps, *)
-                data_reshaped = data.view(self.num_envs, self.num_steps, *data.shape[1:])
-                getattr(self, buffer_name)[:] = data_reshaped
+                data_reshaped = data.view(len(env_ids), self.num_steps, *data.shape[1:])
+                getattr(self, buffer_name)[env_ids, :, :] = data_reshaped
             
     def _visualize(self):
         # try to get the 'robot_anim' articulation
