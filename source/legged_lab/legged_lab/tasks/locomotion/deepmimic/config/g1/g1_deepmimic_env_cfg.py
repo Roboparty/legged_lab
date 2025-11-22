@@ -154,6 +154,8 @@ class G1DeepMimicEnvCfg(DeepMimicEnvCfg):
                 preserve_order=True
             ),
         }
+        
+        self.terminations.bad_orientation = None
     
 # For debug only
 @configclass
@@ -188,3 +190,5 @@ class G1DeepMimicEnvCfg_PLAY(G1DeepMimicEnvCfg):
         
         self.scene.num_envs = 50
         self.scene.env_spacing = 2.5
+        
+        self.animation.animation.random_initialize = False

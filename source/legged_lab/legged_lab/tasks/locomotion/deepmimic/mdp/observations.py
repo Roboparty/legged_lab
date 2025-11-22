@@ -103,11 +103,10 @@ def ref_root_pos_error(
 
 def ref_root_rot_tan_norm(
     env: ManagerBasedAnimationEnv, 
-    animation: str, 
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    animation: str,
+    flatten_steps_dim: bool = True,
 ) -> torch.Tensor:
     
-    robot: Articulation = env.scene[asset_cfg.name]
     animation_term: AnimationTerm = env.animation_manager.get_term(animation)
     
     ref_root_quat = animation_term.get_root_quat()  # shape: (num_envs, num_steps, 4)
@@ -115,35 +114,80 @@ def ref_root_rot_tan_norm(
     ref_root_tan_vec = ref_root_rotm[:, :, :, 0]  # shape: (num_envs, num_steps, 3)
     ref_root_norm_vec = ref_root_rotm[:, :, :, 2]  # shape: (num_envs, num_steps, 3)
     obs = torch.cat([ref_root_tan_vec, ref_root_norm_vec], dim=-1)  # shape: (num_envs, num_steps, 6)
-    num_envs = robot.data.root_pos_w.shape[0]
     
-    return obs.reshape(num_envs, -1)
+    if flatten_steps_dim:
+        return obs.reshape(env.num_envs, -1)
+    else:
+        return obs
+
+
+def ref_root_ang_vel_b(
+    env: ManagerBasedAnimationEnv, 
+    animation: str, 
+    flatten_steps_dim: bool = True,
+) -> torch.Tensor:
+    
+    animation_term: AnimationTerm = env.animation_manager.get_term(animation)
+    num_envs = env.num_envs
+    
+    ref_root_ang_vel_w = animation_term.get_root_ang_vel_w()  # shape: (num_envs, num_steps, 3)
+    ref_root_quat = animation_term.get_root_quat()  # shape: (num_envs, num_steps, 4)
+    ref_root_ang_vel = math_utils.quat_apply_inverse(
+        ref_root_quat, ref_root_ang_vel_w
+    )
+    
+    if flatten_steps_dim:
+        return ref_root_ang_vel.reshape(num_envs, -1)
+    else:
+        return ref_root_ang_vel
+    
 
 def ref_joint_pos(
     env: ManagerBasedAnimationEnv, 
     animation: str, 
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    flatten_steps_dim: bool = True,
 ) -> torch.Tensor:
-    
-    robot: Articulation = env.scene[asset_cfg.name]
+
     animation_term: AnimationTerm = env.animation_manager.get_term(animation)
     
     ref_dof_pos = animation_term.get_dof_pos()  # shape: (num_envs, num_steps, num_dofs)
     
-    return ref_dof_pos.reshape(env.num_envs, -1)
+    if flatten_steps_dim:
+        return ref_dof_pos.reshape(env.num_envs, -1)
+    else:
+        return ref_dof_pos
+    
+def ref_joint_vel(
+    env: ManagerBasedAnimationEnv, 
+    animation: str, 
+    flatten_steps_dim: bool = True,
+) -> torch.Tensor:
+
+    animation_term: AnimationTerm = env.animation_manager.get_term(animation)
+    
+    ref_dof_vel = animation_term.get_dof_vel()  # shape: (num_envs, num_steps, num_dofs)
+    
+    if flatten_steps_dim:
+        return ref_dof_vel.reshape(env.num_envs, -1)
+    else:
+        return ref_dof_vel
 
 def ref_key_body_pos_b(
     env: ManagerBasedAnimationEnv, 
     animation: str, 
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    flatten_steps_dim: bool = True,
 ) -> torch.Tensor:
     
-    robot: Articulation = env.scene[asset_cfg.name]
     animation_term: AnimationTerm = env.animation_manager.get_term(animation)
     
     ref_key_body_pos_b = animation_term.get_key_body_pos_b()  # shape: (num_envs, num_steps, num_key_bodies, 3)
     
-    return ref_key_body_pos_b.reshape(env.num_envs, -1)
+    if flatten_steps_dim:
+        return ref_key_body_pos_b.reshape(env.num_envs, -1)
+    else:
+        num_envs = ref_key_body_pos_b.shape[0]
+        num_steps = ref_key_body_pos_b.shape[1]
+        return ref_key_body_pos_b.reshape(num_envs, num_steps, -1)
 
 
 

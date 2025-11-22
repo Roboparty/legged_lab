@@ -25,10 +25,9 @@ from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 from isaaclab.terrains.config.rough import ROUGH_TERRAINS_CFG  # isort: skip
 
 import legged_lab.tasks.locomotion.amp.mdp as mdp
-from legged_lab.sensors import RayCasterArrayCfg
 from legged_lab.envs import ManagerBasedAmpEnvCfg
-from legged_lab.managers import MotionDataTermCfg
-
+from legged_lab.managers import AnimationTermCfg as AnimTerm
+from legged_lab.managers import MotionDataTermCfg as MotionDataTerm
 
 @configclass
 class AmpSceneCfg(InteractiveSceneCfg):
@@ -56,15 +55,9 @@ class AmpSceneCfg(InteractiveSceneCfg):
     )
     # robots
     robot: ArticulationCfg = MISSING
+    # robot animation (for reference)
+    robot_anim: ArticulationCfg = None
     # sensors
-    height_scanner = RayCasterArrayCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/base",
-        offset=RayCasterArrayCfg.OffsetCfg(pos=(0.0, 0.0, 20.0)),
-        ray_alignment='yaw',
-        pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=[1.6, 1.0]),
-        debug_vis=False,
-        mesh_prim_paths=["/World/ground"],
-    )
     contact_forces = ContactSensorCfg(prim_path="{ENV_REGEX_NS}/Robot/.*", history_length=3, track_air_time=True)
     # lights
     sky_light = AssetBaseCfg(
@@ -107,23 +100,36 @@ class ActionsCfg:
 
 
 @configclass
-class AmpObservationsCfg():
+class ObservationsCfg():
         
     @configclass
     class PolicyCfg(ObsGroup):
         """Observations for policy group."""
 
-        # observation terms (order preserved)
-        # base_lin_vel = ObsTerm(func=mdp.base_lin_vel, noise=Unoise(n_min=-0.1, n_max=0.1))
+        # # observation terms (order preserved)
+        # # base_lin_vel = ObsTerm(func=mdp.base_lin_vel, noise=Unoise(n_min=-0.1, n_max=0.1))
+        # base_ang_vel = ObsTerm(func=mdp.base_ang_vel, noise=Unoise(n_min=-0.2, n_max=0.2))
+        # projected_gravity = ObsTerm(
+        #     func=mdp.projected_gravity,
+        #     noise=Unoise(n_min=-0.05, n_max=0.05),
+        # )
+        # velocity_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "base_velocity"})
+        # joint_pos = ObsTerm(func=mdp.joint_pos_rel, noise=Unoise(n_min=-0.01, n_max=0.01))
+        # joint_vel = ObsTerm(func=mdp.joint_vel_rel, noise=Unoise(n_min=-1.5, n_max=1.5))
+        # actions = ObsTerm(func=mdp.last_action)
+        
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel, noise=Unoise(n_min=-0.2, n_max=0.2))
-        projected_gravity = ObsTerm(
-            func=mdp.projected_gravity,
-            noise=Unoise(n_min=-0.05, n_max=0.05),
-        )
+        root_local_rot_tan_norm = ObsTerm(func=mdp.root_local_rot_tan_norm, noise=Unoise(n_min=-0.05, n_max=0.05))
         velocity_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "base_velocity"})
-        joint_pos = ObsTerm(func=mdp.joint_pos_rel, noise=Unoise(n_min=-0.01, n_max=0.01))
-        joint_vel = ObsTerm(func=mdp.joint_vel_rel, noise=Unoise(n_min=-1.5, n_max=1.5))
+        joint_pos = ObsTerm(func=mdp.joint_pos, noise=Unoise(n_min=-0.01, n_max=0.01))
+        joint_vel = ObsTerm(func=mdp.joint_vel, noise=Unoise(n_min=-1.5, n_max=1.5))
         actions = ObsTerm(func=mdp.last_action)
+        key_body_pos_b = ObsTerm(
+            func=mdp.key_body_pos_b,
+            params=MISSING,
+            noise=Unoise(n_min=-0.08, n_max=0.08),
+        )
+        # root_height = ObsTerm(func=mdp.base_pos_z)
 
         def __post_init__(self):
             self.enable_corruption = True
@@ -139,11 +145,15 @@ class AmpObservationsCfg():
         # observation terms (order preserved)
         base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
-        projected_gravity = ObsTerm(func=mdp.projected_gravity)
+        root_local_rot_tan_norm = ObsTerm(func=mdp.root_local_rot_tan_norm)
         velocity_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "base_velocity"})
-        joint_pos = ObsTerm(func=mdp.joint_pos_rel)
-        joint_vel = ObsTerm(func=mdp.joint_vel_rel)
+        joint_pos = ObsTerm(func=mdp.joint_pos)
+        joint_vel = ObsTerm(func=mdp.joint_vel)
         actions = ObsTerm(func=mdp.last_action)
+        key_body_pos_b = ObsTerm(
+            func=mdp.key_body_pos_b,
+            params=MISSING,
+        )
 
         def __post_init__(self):
             self.enable_corruption = False
@@ -152,45 +162,70 @@ class AmpObservationsCfg():
     critic: CriticCfg = CriticCfg()
     
     @configclass
-    class HeightScanCfg(ObsGroup):
-        height_scan = ObsTerm(
-            func=mdp.height_scan_ch,
-            params={"sensor_cfg": SceneEntityCfg("height_scanner")},
-            noise=Unoise(n_min=-0.1, n_max=0.1),
-            clip=(-1.0, 1.0),
+    class DiscriminatorCfg(ObsGroup):
+        root_local_rot_tan_norm = ObsTerm(func=mdp.root_local_rot_tan_norm)
+        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+        joint_pos = ObsTerm(func=mdp.joint_pos)
+        joint_vel = ObsTerm(func=mdp.joint_vel)
+        key_body_pos_b = ObsTerm(
+            func=mdp.key_body_pos_b,
+            params=MISSING,
         )
         
-        def __post_init__(self):
-            self.enable_corruption = True
-    
-    image: HeightScanCfg = HeightScanCfg()
-        
-    @configclass
-    class AmpCfg(ObsGroup):        
-        base_lin_vel_b: ObsTerm = ObsTerm(func=mdp.base_lin_vel)
-        base_ang_vel_b: ObsTerm = ObsTerm(func=mdp.base_ang_vel)
-        projected_gravity: ObsTerm = ObsTerm(func=mdp.projected_gravity)        
-        base_pos_z: ObsTerm = ObsTerm(func=mdp.base_pos_z)  # TODO: consider terrain height
-        dof_pos: ObsTerm = ObsTerm(func=mdp.joint_pos)
-        dof_vel: ObsTerm = ObsTerm(func=mdp.joint_vel)
-        key_links_pos_b: ObsTerm = ObsTerm(
-            func=mdp.key_links_pos_b, 
-            params={
-                "asset_cfg": SceneEntityCfg("robot"), 
-                "local_pos_dict": MISSING,
-            }
-        )
-    
         def __post_init__(self):
             self.enable_corruption = False
             self.concatenate_terms = True
             self.concatenate_dim = -1
-            self.history_length = 5
-            self.flatten_history_dim = False    # if True, it will flatten each term history first and then concatenate them, 
-                                                # which is not we want for AMP observations
-                                                # Thus, we set it to False, and address it manually
-    # AMP observations group
-    amp: AmpCfg = AmpCfg()
+            self.history_length = 10
+            self.flatten_history_dim = False
+            
+    disc: DiscriminatorCfg = DiscriminatorCfg()
+            
+    @configclass
+    class DiscriminatorDemoCfg(ObsGroup):
+        ref_root_local_rot_tan_norm = ObsTerm(
+            func=mdp.ref_root_local_rot_tan_norm,
+            params={
+                "animation": MISSING,
+                "flatten_steps_dim": False,
+            }
+        )
+        ref_root_ang_vel_b = ObsTerm(
+            func=mdp.ref_root_ang_vel_b,
+            params={
+                "animation": MISSING,
+                "flatten_steps_dim": False,
+            }
+        )
+        ref_joint_pos = ObsTerm(
+            func=mdp.ref_joint_pos,
+            params={
+                "animation": MISSING,
+                "flatten_steps_dim": False,
+            }
+        )
+        ref_joint_vel = ObsTerm(
+            func=mdp.ref_joint_vel,
+            params={
+                "animation": MISSING,
+                "flatten_steps_dim": False,
+            }
+        )
+        ref_key_body_pos_b = ObsTerm(
+            func=mdp.ref_key_body_pos_b,
+            params={
+                "animation": MISSING,
+                "flatten_steps_dim": False,
+            }
+        )
+        
+        def __post_init__(self):
+            self.enable_corruption = False
+            self.concatenate_terms = True
+            self.concatenate_dim = -1
+    
+    disc_demo: DiscriminatorDemoCfg = DiscriminatorDemoCfg()
+        
 
 
 @configclass
@@ -214,7 +249,7 @@ class EventCfg:
         func=mdp.randomize_rigid_body_mass,
         mode="startup",
         params={
-            "asset_cfg": SceneEntityCfg("robot", body_names="base"),
+            "asset_cfg": SceneEntityCfg("robot", body_names=MISSING),
             "mass_distribution_params": (-1.0, 3.0),
             "operation": "add",
         },
@@ -225,40 +260,16 @@ class EventCfg:
         func=mdp.apply_external_force_torque,
         mode="reset",
         params={
-            "asset_cfg": SceneEntityCfg("robot", body_names="base"),
+            "asset_cfg": SceneEntityCfg("robot", body_names=MISSING),
             "force_range": (0.0, 0.0),
             "torque_range": (-0.0, 0.0),
         },
     )
 
-    reset_base = EventTerm(
-        func=mdp.reset_root_state_uniform,
+    reset_from_ref = EventTerm(
+        func=mdp.reset_from_ref, 
         mode="reset",
-        params={
-            "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-3.14, 3.14)},
-            "velocity_range": {
-                "x": (-0.5, 0.5),
-                "y": (-0.5, 0.5),
-                "z": (-0.5, 0.5),
-                "roll": (-0.5, 0.5),
-                "pitch": (-0.5, 0.5),
-                "yaw": (-0.5, 0.5),
-            },
-        },
-    )
-
-    # reset_robot_joints = EventTerm(
-    #     func=mdp.reset_joints_by_scale,
-    #     mode="reset",
-    #     params={
-    #         "position_range": (1.0, 1.0),
-    #         "velocity_range": (-1.0, 1.0),
-    #     },
-    # )
-    
-    reset_robot_joints_rsi = EventTerm(
-        func=mdp.ref_state_init_dof,
-        mode="reset",
+        params=MISSING
     )
 
     # interval
@@ -295,7 +306,7 @@ class RewardsCfg:
         func=mdp.feet_air_time,
         weight=0.125,
         params={
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*FOOT"),
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=MISSING),
             "command_name": "base_velocity",
             "threshold": 0.5,
         },
@@ -303,12 +314,11 @@ class RewardsCfg:
     undesired_contacts = RewTerm(
         func=mdp.undesired_contacts,
         weight=-1.0,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*THIGH"), "threshold": 1.0},
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=MISSING), "threshold": 1.0},
     )
     # -- optional penalties
     flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=0.0)
     dof_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=0.0)
-
 
 
 @configclass
@@ -318,13 +328,13 @@ class TerminationsCfg:
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
     base_contact = DoneTerm(
         func=mdp.illegal_contact,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="base"), "threshold": 1.0},
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=MISSING), "threshold": 1.0},
     )
     base_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.2})
     bad_orientation = DoneTerm(
         func=mdp.bad_orientation, 
         params={
-            "limit_angle": math.radians(45.0),
+            "limit_angle": math.radians(60.0),
         },
     )
 
@@ -333,7 +343,6 @@ class TerminationsCfg:
 class CurriculumCfg:
     """Curriculum terms for the MDP."""
 
-    terrain_levels = CurrTerm(func=mdp.terrain_levels_vel)
     lin_vel_cmd_levels = CurrTerm(
         func=mdp.lin_vel_cmd_levels,
         params={
@@ -352,15 +361,31 @@ class CurriculumCfg:
 
 @configclass
 class MotionDataCfg:
-    pass
-
-    # # You can add dataset config here
-    # dataset = MotionDataTermCfg(
-    #     motion_data_dir=MISSING, 
-    #     motion_data_weight=MISSING,
-    #     dof_names=MISSING,
-    #     key_links_mapping=MISSING,
-    # )
+    """Motion data settings for the MDP."""
+    motion_dataset = MotionDataTerm(
+        motion_data_dir="", 
+        motion_data_weights={},
+    )
+    
+@configclass
+class AnimationCfg:
+    """Animation settings for the MDP."""
+    animation = AnimTerm(
+        motion_data_term="motion_dataset",
+        motion_data_components=[
+            "root_pos_w",
+            "root_quat",
+            "root_vel_w",
+            "root_ang_vel_w",
+            "dof_pos",
+            "dof_vel",
+            "key_body_pos_b",
+        ], 
+        num_steps_to_use=10, 
+        random_initialize=True,
+        random_fetch=True,
+        enable_visualization=False,
+    )
 
 
 ##
@@ -375,7 +400,7 @@ class LocomotionAmpEnvCfg(ManagerBasedAmpEnvCfg):
     # scene
     scene: AmpSceneCfg = AmpSceneCfg(num_envs=4096, env_spacing=2.5)
     # Basic settings
-    observations: AmpObservationsCfg = AmpObservationsCfg()
+    observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
     commands: CommandsCfg = CommandsCfg()
     # MDP settings
@@ -384,7 +409,9 @@ class LocomotionAmpEnvCfg(ManagerBasedAmpEnvCfg):
     events: EventCfg = EventCfg()
     curriculum: CurriculumCfg = CurriculumCfg()
     # Motion data
-    motion_data: MotionDataTermCfg = MotionDataTermCfg()
+    motion_data: MotionDataCfg = MotionDataCfg()
+    # Animation
+    animation: AnimationCfg = AnimationCfg()
 
     def __post_init__(self):
         """Post initialization."""
@@ -398,16 +425,6 @@ class LocomotionAmpEnvCfg(ManagerBasedAmpEnvCfg):
         self.sim.physx.gpu_max_rigid_patch_count = 10 * 2**15
         # update sensor update periods
         # we tick all the sensors based on the smallest update period (physics update period)
-        if self.scene.height_scanner is not None:
-            self.scene.height_scanner.update_period = self.decimation * self.sim.dt
         if self.scene.contact_forces is not None:
             self.scene.contact_forces.update_period = self.sim.dt
 
-        # check if terrain levels curriculum is enabled - if so, enable curriculum for terrain generator
-        # this generates terrains with increasing difficulty and is useful for training
-        if getattr(self.curriculum, "terrain_levels", None) is not None:
-            if self.scene.terrain.terrain_generator is not None:
-                self.scene.terrain.terrain_generator.curriculum = True
-        else:
-            if self.scene.terrain.terrain_generator is not None:
-                self.scene.terrain.terrain_generator.curriculum = False

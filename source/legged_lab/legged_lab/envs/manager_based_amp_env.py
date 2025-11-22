@@ -6,10 +6,11 @@ from collections.abc import Sequence
 from isaaclab.envs import ManagerBasedEnv, ManagerBasedRLEnv, VecEnvStepReturn, VecEnvObs
 from isaaclab.managers import ActionManager, ObservationManager, RecorderManager, CommandManager, CurriculumManager, RewardManager, TerminationManager
 
-from legged_lab.managers import MotionDataManager, MotionDataTerm, MotionDataTermCfg
+from legged_lab.managers import MotionDataManager, AnimationManager
+from .manager_based_animation_env import ManagerBasedAnimationEnv
 from .manager_based_amp_env_cfg import ManagerBasedAmpEnvCfg
 
-class ManagerBasedAmpEnv(ManagerBasedRLEnv):
+class ManagerBasedAmpEnv(ManagerBasedAnimationEnv):
     
     """AMP Environment for locomotion tasks.
 
@@ -27,27 +28,17 @@ class ManagerBasedAmpEnv(ManagerBasedRLEnv):
     def __init__(self, cfg: ManagerBasedAmpEnvCfg, render_mode: str | None = None, **kwargs):
         super().__init__(cfg=cfg, render_mode=render_mode, **kwargs)
 
-    def load_managers(self):
-        """Load the managers for the environment.
-            Add a motion data manager to load the motion data terms.
-        """
-        super().load_managers()
-        # -- motion data manager
-        self.motion_data_manager = MotionDataManager(self.cfg.motion_data, self)
-        print("[INFO] Motion Data Manager: ", self.motion_data_manager)
+    # def _get_amp_observations(self) -> torch.Tensor:
+    #     """Get the AMP observations.
 
+    #     This function retrieves the AMP observations from the observation manager and returns them.
 
-    def _get_amp_observations(self) -> torch.Tensor:
-        """Get the AMP observations.
+    #     Returns:
+    #         The AMP observations as a tensor.
+    #     """
 
-        This function retrieves the AMP observations from the observation manager and returns them.
-
-        Returns:
-            The AMP observations as a tensor.
-        """
-        # TODO: consider obs_groups
-        amp_obs = self.observation_manager.compute_group("amp", update_history=False)
-        return amp_obs # (num_envs, history_length, obs_dim)
+    #     amp_obs = self.observation_manager.compute_group("amp", update_history=False)
+    #     return amp_obs # (num_envs, history_length, obs_dim)
     
     def step(self, action: torch.Tensor) -> VecEnvStepReturn:
         """Execute one time-step of the environment's dynamics and reset terminated environments.
@@ -82,6 +73,7 @@ class ManagerBasedAmpEnv(ManagerBasedRLEnv):
             self.scene.write_data_to_sim()
             # simulate
             self.sim.step(render=False)
+            self.recorder_manager.record_post_physics_decimation_step()
             # render between steps only if the GUI or an RTX sensor needs it
             # note: we assume the render interval to be the shortest accepted rendering interval.
             #    If a camera needs rendering at a faster frequency, this will lead to unexpected behavior.
@@ -91,6 +83,8 @@ class ManagerBasedAmpEnv(ManagerBasedRLEnv):
             self.scene.update(dt=self.physics_dt)
 
         # post-step:
+        # -- update animation manager
+        self.animation_manager.update(dt=self.step_dt)
         # -- update env counters (used for curriculum generation)
         self.episode_length_buf += 1  # step in current episode (per env)
         self.common_step_counter += 1  # total step (common for all envs)
@@ -100,8 +94,8 @@ class ManagerBasedAmpEnv(ManagerBasedRLEnv):
         self.reset_time_outs = self.termination_manager.time_outs
         # -- reward computation
         self.reward_buf = self.reward_manager.compute(dt=self.step_dt)
-        # -- update AMP observations
-        amp_obs = self._get_amp_observations()
+        # # -- update AMP observations
+        # amp_obs = self._get_amp_observations()
 
         if len(self.recorder_manager.active_terms) > 0:
             # update observations for recording if needed
@@ -134,8 +128,8 @@ class ManagerBasedAmpEnv(ManagerBasedRLEnv):
         # -- compute observations
         # note: done after reset to get the correct observations for reset envs
         self.obs_buf = self.observation_manager.compute(update_history=True)
-        if len(reset_env_ids) > 0:
-            self.obs_buf["amp"][reset_env_ids] = amp_obs[reset_env_ids]
+        # if len(reset_env_ids) > 0:
+        #     self.obs_buf["amp"][reset_env_ids] = amp_obs[reset_env_ids]
         
         # return observations, rewards, resets and extras
         return self.obs_buf, self.reward_buf, self.reset_terminated, self.reset_time_outs, self.extras

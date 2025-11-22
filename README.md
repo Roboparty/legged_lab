@@ -25,6 +25,7 @@ https://github.com/user-attachments/assets/ed84a8a3-f349-44ac-9cfd-2baab2265a25
 
 ## News & Updates
 
+- 2025/11/19: Add DeepMimic for G1. 
 - 2025/10/14: Update to support rsl_rl v3.1.1. Only walking in flat terrain is supported now.
 - 2025/08/24: Support using more steps observations and motion data in AMP training.
 - 2025/08/22: Compatible with Isaac Lab 2.2.0.
