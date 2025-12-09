@@ -35,9 +35,6 @@ _repo
 _build
 .lastformat
 
-# mocap data
-**/*.pkl
-
 # Temp folders
 **/temp/
 **/tmp/
