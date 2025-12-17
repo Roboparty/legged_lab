@@ -128,6 +128,7 @@ class Go2RewardsCfg:
         },
     )
     
+@configclass
 class Go2FlatEnvCfg(LocomotionVelocityEnvCfg):
     observations: Go2ObservationsCfg = Go2ObservationsCfg()
     rewards: Go2RewardsCfg = Go2RewardsCfg()
