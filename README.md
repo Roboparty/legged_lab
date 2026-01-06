@@ -12,10 +12,12 @@
 
 This repository is an extension for legged robot reinforcement learning based on Isaac Lab, which allows to develop in an isolated environment, outside of the core Isaac Lab repository. The RL algorithm is based on a [forked RSL-RL library](https://github.com/zitongbai/rsl_rl/tree/feature/amp). 
 
+This project is originally developed by [zitongbai](https://github.com/zitongbai).
+
 **Key Features:**
 
 - `DeepMimic` for humanoid robots, including Unitree G1.
-- `AMP` Adversarial Motion Priors (AMP) for humanoid robots, including Unitree G1. We suggest retargeting the human motion data by [GMR](https://github.com/YanjieZe/GMR).
+- `AMP` Adversarial Motion Priors (AMP) for humanoid robots, including Atom01, Unitree G1. We suggest retargeting the human motion data by [GMR](https://github.com/YanjieZe/GMR).
 
 ## Demo
 
@@ -25,6 +27,7 @@ https://github.com/user-attachments/assets/ed84a8a3-f349-44ac-9cfd-2baab2265a25
 
 ## 🔥 News & Updates
 
+- 2026/01/06: Add Atom01 open-source robot (by Roboparty).
 - 2025/12/16: Test in Isaac Lab 2.3.1 and RSL-RL 3.2.0. 
 - 2025/12/05: Use git lfs to store large files, including motion data and robot models.
 - 2025/11/23: Add Symmetry data augmentation in AMP training.
@@ -49,10 +52,10 @@ https://github.com/user-attachments/assets/ed84a8a3-f349-44ac-9cfd-2baab2265a25
 
     ```bash
     # Option 1: HTTPS
-    git clone https://github.com/zitongbai/legged_lab
+    git clone https://github.com/zerojuhao/legged_lab
     
     # Option 2: SSH
-    git clone git@github.com:zitongbai/legged_lab.git
+    git clone git@github.com:zerojuhao/legged_lab.git
     
     cd legged_lab
     ```
@@ -137,6 +140,10 @@ python scripts/rsl_rl/play.py --task LeggedLab-Isaac-Deepmimic-G1-v0 --headless 
 To train the AMP algorithm, you can run the following command:
 
 ```bash
+python scripts/rsl_rl/train.py --task LeggedLab-Isaac-AMP-Flat-Atom01-v0 --headless --num_envs 8192
+```
+
+```bash
 python scripts/rsl_rl/train.py --task LeggedLab-Isaac-AMP-G1-v0 --headless --max_iterations 50000
 ```
 
@@ -158,6 +165,11 @@ You can play the trained model in a headless mode and record the video:
 
 ```bash
 # replace the checkpoint path with the path to your trained model
+python scripts/rsl_rl/play.py --task LeggedLab-Isaac-AMP-Flat-Atom01-v0 --headless --num_envs 64 --video --checkpoint logs/rsl_rl/experiment_name/run_name/model_xxx.pt
+```
+
+```bash
+# replace the checkpoint path with the path to your trained model
 python scripts/rsl_rl/play.py --task LeggedLab-Isaac-AMP-G1-v0 --headless --num_envs 64 --video --checkpoint logs/rsl_rl/experiment_name/run_name/model_xxx.pt
 ```
 
@@ -171,7 +183,7 @@ The video will be saved in the `logs/rsl_rl/experiment_name/run_name/videos/play
 - [x] Self-contact penalty in AMP
 - [x] Asymmetric Actor-Critic in AMP
 - [x] Symmetric Reward
-- [ ] Sim2sim in mujoco
+- [√] Sim2sim in mujoco (support atom01)
 - [ ] Add support for image observations
 - [ ] Walk in rough terrain with AMP
 

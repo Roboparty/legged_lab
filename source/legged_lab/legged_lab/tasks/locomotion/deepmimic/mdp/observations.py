@@ -142,6 +142,27 @@ def ref_root_ang_vel_b(
         return ref_root_ang_vel
     
 
+def ref_root_lin_vel_b(
+    env: ManagerBasedAnimationEnv, 
+    animation: str, 
+    flatten_steps_dim: bool = True,
+) -> torch.Tensor:
+    
+    animation_term: AnimationTerm = env.animation_manager.get_term(animation)
+    num_envs = env.num_envs
+    
+    ref_root_lin_vel_w = animation_term.get_root_vel_w()  # shape: (num_envs, num_steps, 3)
+    ref_root_quat = animation_term.get_root_quat()  # shape: (num_envs, num_steps, 4)
+    ref_root_lin_vel = math_utils.quat_apply_inverse(
+        ref_root_quat, ref_root_lin_vel_w
+    )
+    
+    if flatten_steps_dim:
+        return ref_root_lin_vel.reshape(num_envs, -1)
+    else:
+        return ref_root_lin_vel
+
+
 def ref_joint_pos(
     env: ManagerBasedAnimationEnv, 
     animation: str, 

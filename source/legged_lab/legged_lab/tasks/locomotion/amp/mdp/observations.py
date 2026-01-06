@@ -7,7 +7,7 @@ import isaaclab.utils.math as math_utils
 import isaaclab.utils.string as string_utils
 from isaaclab.assets import Articulation, RigidObject
 from isaaclab.managers import SceneEntityCfg
-from isaaclab.sensors import FrameTransformer
+from isaaclab.sensors import FrameTransformer, RayCaster
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
@@ -60,3 +60,30 @@ def ref_root_local_rot_tan_norm(
     else:
         return obs
 
+def ref_root_projected_gravity(
+    env: ManagerBasedAnimationEnv, 
+    animation: str,
+    flatten_steps_dim: bool = True,
+) -> torch.Tensor:
+    
+    animation_term: AnimationTerm = env.animation_manager.get_term(animation)
+    num_envs = env.num_envs
+    
+    ref_root_quat = animation_term.get_root_quat() # shape: (num_envs, num_steps, 4)
+    gravity_vec = torch.tensor([0.0, 0.0, -1.0], device=ref_root_quat.device).unsqueeze(0).unsqueeze(0)  # shape: (1, 1, 3)
+    projected_gravity = math_utils.quat_apply_inverse(
+        ref_root_quat, gravity_vec.expand(num_envs, -1, -1)
+    )  # shape: (num_envs, num_steps, 3)
+    
+    if flatten_steps_dim:
+        return projected_gravity.reshape(num_envs, -1)
+    else:
+        return projected_gravity
+    
+def ray_caster(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg) -> torch.Tensor:
+    """获取激光雷达（RayCaster）传感器的距离数据"""
+    sensor: RayCaster = env.scene.sensors[sensor_cfg.name]
+    origin = sensor.data.pos_w.unsqueeze(1)  # [num_envs, 1, 3]
+    hits = sensor.data.ray_hits_w  # [num_envs, num_rays, 3]
+    distances = torch.norm(hits - origin, dim=-1).clamp(min=0.2, max=5)  # [num_envs, num_rays]
+    return distances

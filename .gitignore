@@ -38,3 +38,6 @@ _build
 # Temp folders
 **/temp/
 **/tmp/
+
+source/legged_lab/legged_lab/tasks/locomotion/amp/config/a1/
+source/legged_lab/legged_lab/tasks/locomotion/amp/config/atom02/
