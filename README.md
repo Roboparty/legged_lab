@@ -177,6 +177,12 @@ The video will be saved in the `logs/rsl_rl/experiment_name/run_name/videos/play
 
 </details>
 
+To check sim to sim using Mujoco， you can run:
+
+```bash
+python scripts/atom01_long_base_link_lab_to_mujoco.py
+```
+
 ## 🗺️ Roadmap
 
 - [ ] Add more legged robots, such as Unitree H1
