@@ -196,7 +196,7 @@ python scripts/atom01_long_base_link_lab_to_mujoco.py
 ## 🙏 Acknowledgement
 
 We would like to express our gratitude to the following open-source projects:
-
+- [**legged_lab**](https://github.com/zitongbai/legged_lab) - The foundation of this project.
 - [**Isaac Lab**](https://github.com/isaac-sim/IsaacLab) - The foundation of this project.
 - [**RSL-RL**](https://github.com/leggedrobotics/rsl_rl) - Reinforcement learning algorithms for legged robots.
 - [**AMP_for_hardware**](https://github.com/Alescontrela/AMP_for_hardware) - Inspiration for AMP implementation.

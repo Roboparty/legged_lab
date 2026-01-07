@@ -186,7 +186,7 @@ class Atom01AmpFlatEnvCfg(LocomotionAmpEnvCfg):
         # ------------------------------------------------------
         # Scene
         # ------------------------------------------------------
-        self.scene.robot = ATOM01_LONG_BASE_LINK_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+        self.scene.robot = ATOM01_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         
         # plane terrain
         self.scene.terrain.terrain_type = "plane"
@@ -196,7 +196,7 @@ class Atom01AmpFlatEnvCfg(LocomotionAmpEnvCfg):
         # motion data
         # ------------------------------------------------------
         self.motion_data.motion_dataset.motion_data_dir = os.path.join(
-            LEGGED_LAB_ROOT_DIR, "data", "MotionData", "atom01_long_base_link_lab"
+            LEGGED_LAB_ROOT_DIR, "data", "MotionData", "atom01_lab"
         )
         self.motion_data.motion_dataset.motion_data_weights={
             
@@ -316,7 +316,6 @@ class Atom01AmpFlatEnvCfg(LocomotionAmpEnvCfg):
         self.commands.base_velocity.ranges.lin_vel_x = (-0.8, 2.5)
         self.commands.base_velocity.ranges.lin_vel_y = (-0.8, 0.8)
         self.commands.base_velocity.ranges.ang_vel_z = (-1.0, 1.0)
-        self.commands.base_velocity.ranges.zero_prob = (0.1, 0.1, 0.1)  # 采样零速度
                 
         # ------------------------------------------------------
         # Curriculum
