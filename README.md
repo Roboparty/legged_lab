@@ -27,7 +27,7 @@ https://github.com/user-attachments/assets/ed84a8a3-f349-44ac-9cfd-2baab2265a25
 
 ## 🔥 News & Updates
 
-- 2026/01/06: Add Atom01 open-source robot (by Roboparty).
+- 2026/01/06: Add Atom01 open-source robot from Roboparty(2 version, short and long base link).
 - 2025/12/16: Test in Isaac Lab 2.3.1 and RSL-RL 3.2.0. 
 - 2025/12/05: Use git lfs to store large files, including motion data and robot models.
 - 2025/11/23: Add Symmetry data augmentation in AMP training.
@@ -189,7 +189,7 @@ python scripts/atom01_long_base_link_lab_to_mujoco.py
 - [x] Self-contact penalty in AMP
 - [x] Asymmetric Actor-Critic in AMP
 - [x] Symmetric Reward
-- [√] Sim2sim in mujoco (support atom01)
+- [x] Sim2sim in mujoco (support atom01)
 - [ ] Add support for image observations
 - [ ] Walk in rough terrain with AMP
 

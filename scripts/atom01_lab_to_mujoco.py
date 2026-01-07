@@ -33,49 +33,46 @@ import mujoco, mujoco_viewer
 from tqdm import tqdm
 from collections import deque
 from scipy.spatial.transform import Rotation as R
-# from legged_lab import LEGGED_LAB_ROOT_DIR
 import torch
 import os
 import cv2
-import matplotlib.pyplot as plt # Import matplotlib
+import matplotlib.pyplot as plt
 from pynput import keyboard
-import threading
 from pathlib import Path
-# LEGGED_LAB_ROOT_DIR = Path(__file__).resolve().parent
-import time  # 添加此导入以使用time.sleep
+import time
 
 class cmd:
     vx = 0.0
     vy = 0.0
     dyaw = 0.0
-    vx_increment = 0.1  # 每次按键改变的速度增量
+    vx_increment = 0.1
     vy_increment = 0.1
     dyaw_increment = 0.1
-    # Limits (asymmetric where requested)
+
     min_vx = -1
-    max_vx = 3 # 最大前进速度
+    max_vx = 2.5
     min_vy = -0.8
-    max_vy = 0.8  # 最大侧向速度
+    max_vy = 0.8
     min_dyaw = -1.5
-    max_dyaw = 1.5  # 最大角速度
-    camera_follow = True  # 相机跟随开关
-    reset_requested = False  # 外部请求重置机器人位置/速度/状态
+    max_dyaw = 1.5
+    camera_follow = True
+    reset_requested = False
     
     @classmethod
     def update_vx(cls, delta):
-        """更新前进速度"""
+        """update forward velocity"""
         cls.vx = np.clip(cls.vx + delta, cls.min_vx, cls.max_vx)
         print(f"vx: {cls.vx:.2f}, vy: {cls.vy:.2f}, dyaw: {cls.dyaw:.2f}")
     
     @classmethod
     def update_vy(cls, delta):
-        """更新侧向速度"""
+        """update lateral velocity"""
         cls.vy = np.clip(cls.vy + delta, cls.min_vy, cls.max_vy)
         print(f"vx: {cls.vx:.2f}, vy: {cls.vy:.2f}, dyaw: {cls.dyaw:.2f}")
     
     @classmethod
-    def c(cls, delta):
-        """更新角速度"""
+    def update_dyaw(cls, delta):
+        """update angular velocity"""
         cls.dyaw = np.clip(cls.dyaw + delta, cls.min_dyaw, cls.max_dyaw)
         print(f"vx: {cls.vx:.2f}, vy: {cls.vy:.2f}, dyaw: {cls.dyaw:.2f}")
 
@@ -86,53 +83,52 @@ class cmd:
     
     @classmethod
     def reset(cls):
-        """重置所有速度为0"""
+        """reset all velocities to zero"""
         cls.vx = 0.0
         cls.vy = 0.0
         cls.dyaw = 0.0
-        print(f"速度已重置: vx: {cls.vx:.2f}, vy: {cls.vy:.2f}, dyaw: {cls.dyaw:.2f}")
-
+        print(f"Velocities reset: vx: {cls.vx:.2f}, vy: {cls.vy:.2f}, dyaw: {cls.dyaw:.2f}")
 def on_press(key):
-    """键盘按下事件处理"""
+    """Key press event handler"""
     try:
-        # 数字键控制：8/5 控制前进/后退 (vx)，4/6 控制左右走 (vy)，7/9 控制左右转向 (dyaw)
+        # Number key controls: 8/5 control forward/backward (vx), 4/6 control left/right (vy), 7/9 control left/right turn (dyaw)
         if hasattr(key, 'char') and key.char is not None:
             c = key.char.lower()
             if c == '8':
-                # 8 -> 前进 (increase vx)
+                # 8 -> forward (increase vx)
                 cmd.update_vx(cmd.vx_increment)
             elif c == '2':
-                # 2 -> 后退 (decrease vx)
+                # 2 -> backward (decrease vx)
                 cmd.update_vx(-cmd.vx_increment)
             elif c == '4':
-                # 4 -> 左走 (decrease vy)
+                # 4 -> left (decrease vy)
                 cmd.update_vy(cmd.vy_increment)
             elif c == '6':
-                # 6 -> 右走 (increase vy)
+                # 6 -> right (increase vy)
                 cmd.update_vy(-cmd.vy_increment)
             elif c == '7':
-                # 7 -> 左转 (increase dyaw)
-                cmd.c(cmd.dyaw_increment)
+                # 7 -> turn left (increase dyaw)
+                cmd.update_dyaw(cmd.dyaw_increment)
             elif c == '9':
-                # 9 -> 右转 (decrease dyaw)
-                cmd.c(-cmd.dyaw_increment)
+                # 9 -> turn right (decrease dyaw)
+                cmd.update_dyaw(-cmd.dyaw_increment)
             elif c == 'f':
-                # 切换相机跟随
+                # toggle camera follow
                 cmd.toggle_camera_follow()
             elif c == '0':
-                # 请求在主循环中重置机器人状态（线程安全的标志）
+                # request reset robot state in main loop (thread-safe flag)
                 cmd.reset_requested = True
                 print('Reset requested (0 key pressed)')
     except AttributeError:
         pass
 
 def on_release(key):
-    """键盘释放事件处理"""
-    # 如果需要按住键才移动，可以在这里处理
+    """Key release event handler"""
+    # If movement should only occur while keys are held down, handle it here
     pass
 
 def start_keyboard_listener():
-    """启动键盘监听器"""
+    """Start keyboard listener"""
     listener = keyboard.Listener(on_press=on_press, on_release=on_release)
     listener.start()
     return listener
@@ -166,15 +162,15 @@ def run_mujoco(policy, cfg, headless=False):
     Returns:
         None
     """
-    # 启动键盘监听器
+    # Start keyboard listener
     print("=" * 60)
-    print("键盘控制说明：")
-    print("  ↑ 向上箭头: 增加前进速度 (vx)")
-    print("  ↓ 向下箭头: 减少前进速度 (vx)")
-    print("  ← 向左箭头: 增加左转角速度 (dyaw)")
-    print("  → 向右箭头: 增加右转角速度 (dyaw)")
-    print("  0 键: 重置所有速度为0")
-    print("  F 键: 切换相机后方跟随模式")
+    print("Keyboard control instructions:")
+    print("  ↑ Up arrow: Increase forward speed (vx)")
+    print("  ↓ Down arrow: Decrease forward speed (vx)")
+    print("  ← Left arrow: Increase left turn rate (dyaw)")
+    print("  → Right arrow: Increase right turn rate (dyaw)")
+    print("  0 key: Reset all speeds to 0")
+    print("  F key: Toggle camera follow mode")
     print("=" * 60)
     keyboard_listener = start_keyboard_listener()
     
@@ -336,7 +332,7 @@ def run_mujoco(policy, cfg, headless=False):
 
         count_lowlevel += 1
         
-        # 在每次仿真步后，计算经过的真实时间，并添加延迟以匹配仿真时间
+        # After each simulation step, calculate the elapsed real time and add delay to match simulation time
         elapsed_real_time = time.time() - start_time
         target_sim_time = (step + 1) * cfg.sim_config.dt
         if elapsed_real_time < target_sim_time:
@@ -347,7 +343,7 @@ def run_mujoco(policy, cfg, headless=False):
     else:
         viewer.close()
     
-    # 停止键盘监听器
+    # Stop keyboard listener
     keyboard_listener.stop()
 
      # --- Plotting Section (Using only low-frequency data) ---
@@ -444,8 +440,6 @@ if __name__ == '__main__':
     parser.add_argument('--load_model', 
                         # type=str, 
                         default="/home/msi/Desktop/policy.pt",
-                        #  default="/home/msi/Desktop/2025-12-30_11-00-46/exported/policy.pt",
-                        # default="/home/msi/Desktop/2025-12-29_19-29-50/exported/policy.pt",
                         help='Run to load from.')
     parser.add_argument('--terrain', action='store_true', default='plane', help='terrain or plane')
     parser.add_argument('--headless', action='store_true', help='Run without GUI and save video')
